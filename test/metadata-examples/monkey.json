@@ -1,0 +1,45 @@
+{
+  "name": "SMB #2936",
+  "description": "SMB is a collection of 5000 randomly generated 24x24 pixels NFTs on the Solana Blockchain. Each SolanaMonkey is unique and comes with different type and attributes varying in rarity.",
+  "image": "https://arweave.net/hfKuaHQCvaRi1p80bg7bPfyE1Q9e07gp2NILMK4KNjY",
+  "external_url": "https://solanamonkey.business/",
+  "attributes": [
+    {
+      "trait_type": "Attributes Count",
+      "value": "3"
+    },
+    {
+      "trait_type": "Type",
+      "value": "Purple"
+    },
+    {
+      "trait_type": "Clothes",
+      "value": "Purple Shirt"
+    },
+    {
+      "trait_type": "Ears",
+      "value": "None"
+    },
+    {
+      "trait_type": "Mouth",
+      "value": "None"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Purple Glasses"
+    },
+    {
+      "trait_type": "Hat",
+      "value": "Green Cap"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://arweave.net/hfKuaHQCvaRi1p80bg7bPfyE1Q9e07gp2NILMK4KNjY",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

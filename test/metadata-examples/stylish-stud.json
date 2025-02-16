@@ -1,0 +1,45 @@
+{
+  "name": "Stylish Stud #9088",
+  "description": "A 15,008-piece combined collection of Studs and Mares. They came together to produce the very first racehorses in Photo Finish™ LIVE - laying down the bloodlines that run through every horse in the game. PFP owners are VIP’s in the ecosystem, receiving $CROWN based on overall rarity, and gaining entry into the exclusive Photo Finish™ Jockey Club.",
+  "image": "https://assets.thirdtimegames.com/pfl-pfp/9088.png",
+  "external_url": "https://photofinish.live",
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Pink"
+    },
+    {
+      "trait_type": "Face",
+      "value": "Bounty Hunter"
+    },
+    {
+      "trait_type": "Outfit",
+      "value": "Red Christmas Sweater"
+    },
+    {
+      "trait_type": "Head",
+      "value": "Brown Mane"
+    },
+    {
+      "trait_type": "Coat",
+      "value": "Bay"
+    },
+    {
+      "trait_type": "generation",
+      "value": "1"
+    },
+    {
+      "trait_type": "$CROWN Allocation",
+      "value": "9886"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://assets.thirdtimegames.com/pfl-pfp/9088.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}
