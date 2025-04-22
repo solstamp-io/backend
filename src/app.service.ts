@@ -227,6 +227,73 @@ export class AppService {
     }
   }
 
+  async listNFTs(network: NetworkType) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    if (network === 'mainnet') {
+      return {
+        items: [],
+      };
+    }
+
+    return {
+      items: [
+        {
+          name: 'Frogana #4338',
+          description: 'Part of a collection of frogs',
+          imageURL:
+            'https://gz4t3ov2yjfayip73igk6scdsryol3ut76724lsfmkpntsn2yjya.arweave.net/Nnk9urrCSgwh_9oMr0hDlHDl7pP_v64uRWKe2cm6wnA?ext=png',
+          solscanURL:
+            'https://solscan.io/token/6ANQYPVb8pDf5NDsSZpUPYCSmKL61yX3B2DyGNLDCWC',
+        },
+        {
+          name: 'Fox #4123',
+          description: 'Part of the Transdimensional Fox Federation',
+          imageURL: 'https://famousfoxes.com/tff/4123.png',
+          solscanURL:
+            'https://solscan.io/token/BLNsYF3H3vvJonD6dnceRUivcLLyNU7uCVd3Qi5ZfwJu',
+        },
+        {
+          name: 'Banx #6857',
+          description: 'Part of the Banx collection',
+          imageURL: 'https://banxnft.s3.amazonaws.com/images/6857.png',
+          solscanURL:
+            'https://solscan.io/token/HLrSMdkuoJsZAJwzX4GERpTxgFtqnL7NimskcQ22aGEv',
+        },
+        {
+          name: 'Okay Bear #3349',
+          description: 'Part of the Okay Bears Collection.',
+          imageURL:
+            'https://wumlo33xurctejyx5rsczbzzqkxvjmwzkpztem27yvu42o74kotq.arweave.net/tRi3b3ekRTInF-xkLIc5gq9UstlT8zIzX8VpzTv8U6c',
+          solscanURL:
+            'https://solscan.io/token/Cbv2iY4tgyGnCXnYqfZ7fbNVQ6rt7AxG5egvvsXkJGBv',
+        },
+        {
+          name: 'Generations #161948 (HL_GNR)',
+          description: 'Part of the Honeyland collection',
+          imageURL:
+            'https://content.honey.land/images/bees/Honeyland%20Generations/Generational_Bee_Egg_Gen1.jpg',
+          solscanURL:
+            'https://solscan.io/token/7iffR2C8K5AR2ooN3PooYhUprmECPwvfJLH8jFYpmy33',
+        },
+        {
+          name: 'Bored Ape Solana Club #5089',
+          description: 'Part of the Bored Ape Club collection',
+          imageURL: 'https://basc.s3.amazonaws.com/img/5089.png',
+          solscanURL:
+            'https://solscan.io/token/AeUAzgLsU762A7vwvsju16k7GJx8wQLXdP1z8gvCKqeH',
+        },
+        {
+          name: 'Marvelous Mare #2254',
+          description: 'Part of the Marvelous Mare collection',
+          imageURL: 'https://assets.thirdtimegames.com/pfl-pfp/12254.png',
+          solscanURL:
+            'https://solscan.io/token/61m2Gr8iWRSFfPFxkghTdeo275YnqsZ6gtvBjy5i5Y6j',
+        },
+      ],
+    };
+  }
+
   async createNft(
     recipientPublicKey: string,
     mintSchema: MintSchemaDto,

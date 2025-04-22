@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UseInterceptors,
   UploadedFile,
@@ -29,7 +30,7 @@ const MB_TO_BYTES = 1_048_576;
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Post('upload-image')
+  @Post('image')
   @UseInterceptors(FileInterceptor('image'))
   async uploadImage(
     @Network() network: NetworkType,
@@ -46,7 +47,7 @@ export class AppController {
     return await this.appService.uploadImage(image, network);
   }
 
-  @Post('create-token')
+  @Post('token')
   async createToken(
     @Network() network: NetworkType,
     @PublicKey() publicKey: string,
@@ -60,7 +61,12 @@ export class AppController {
     );
   }
 
-  @Post('create-nft')
+  @Get('nft')
+  async listNFTs(@Network() network: NetworkType) {
+    return await this.appService.listNFTs(network);
+  }
+
+  @Post('nft')
   async createNft(
     @Network() network: NetworkType,
     @PublicKey() publicKey: string,
