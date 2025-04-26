@@ -1,8 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { transferSol } from '@metaplex-foundation/mpl-toolbox';
+import {
+  fetchMetadata,
+  fetchDigitalAsset,
+  fetchAllDigitalAssetByCreator,
+} from '@metaplex-foundation/mpl-token-metadata';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { mplCore, create } from '@metaplex-foundation/mpl-core';
-import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
+import { mplCore, create, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsTransaction,
+} from '@metaplex-foundation/umi-web3js-adapters';
 import {
   createGenericFile,
   createGenericFileFromJson,
@@ -125,6 +133,13 @@ export const createTokenSchema = z.object({
   revokeFreezeAuthority: z.boolean().default(false),
 });
 
+type NFT = {
+  name: string;
+  description: string;
+  imageURL: string;
+  solscanURL: string;
+};
+
 export type CreateTokenSchemaDto = z.infer<typeof createTokenSchema>;
 
 const umi = (endpoint: string) => createUmi(endpoint).use(mplCore());
@@ -222,75 +237,81 @@ export class AppService {
 
       return { image_url: url };
     } catch (error) {
-      console.error('Error uploading to Irys:', error);
+      this.logger.error('Error uploading to Irys:', error);
       throw error;
     }
   }
 
+  // NOTE: Eventually run a background process to prefetch the list and cache in some form of persistent storage
   async listNFTs(network: NetworkType) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const umi = network === 'devnet' ? this.devnetUmi : this.mainnetUmi;
+    const connection =
+      network === 'devnet' ? this.devnetConnection : this.mainnetConnection;
 
-    if (network === 'mainnet') {
-      return {
-        items: [],
-      };
+    const METAPLEX_CORE_PROGRAM_ID =
+      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d';
+    const payerPublicKey = this.payerKeypair.publicKey;
+
+    const assetIds: string[] = [];
+
+    const backendSignatures = await connection.getSignaturesForAddress(
+      payerPublicKey,
+      { limit: 10 },
+    );
+
+    for (const sigInfo of backendSignatures) {
+      const tx = await connection.getTransaction(sigInfo.signature, {
+        maxSupportedTransactionVersion: 1, // Support versioned transactions
+        commitment: 'confirmed', // Add proper commitment
+      });
+
+      if (
+        tx &&
+        tx.transaction &&
+        tx.transaction.message.getAccountKeys().get(0)?.toBase58() ===
+          this.payerKeypair.publicKey.toBase58()
+      ) {
+        const instructions = tx.transaction.message.compiledInstructions;
+        const accountKeys = tx.transaction.message.getAccountKeys();
+
+        for (const instruction of instructions) {
+          const programId = accountKeys.get(instruction.programIdIndex);
+
+          if (programId?.toBase58() === METAPLEX_CORE_PROGRAM_ID) {
+            const accountIndexes = instruction.accountKeyIndexes;
+            const accounts = accountIndexes.map((idx) =>
+              accountKeys.get(idx)?.toBase58(),
+            );
+
+            const assetId = accounts[0];
+            if (assetId) {
+              assetIds.push(assetId);
+            }
+          }
+        }
+      }
+    }
+
+    const items: NFT[] = [];
+    for (const assetId of assetIds) {
+      const mintAddress = publicKey(assetId);
+      const asset = await fetchAssetV1(umi, mintAddress);
+
+      const offchainMetadataResponse = await fetch(asset.uri);
+
+      const offchainMetadata =
+        (await offchainMetadataResponse.json()) as MintSchemaDto['metadata'];
+
+      items.push({
+        name: offchainMetadata.name,
+        description: offchainMetadata.description,
+        imageURL: offchainMetadata.image,
+        solscanURL: `https://solscan.io/token/${mintAddress}?cluster=${network}`,
+      });
     }
 
     return {
-      items: [
-        {
-          name: 'Frogana #4338',
-          description: 'Part of a collection of frogs',
-          imageURL:
-            'https://gz4t3ov2yjfayip73igk6scdsryol3ut76724lsfmkpntsn2yjya.arweave.net/Nnk9urrCSgwh_9oMr0hDlHDl7pP_v64uRWKe2cm6wnA?ext=png',
-          solscanURL:
-            'https://solscan.io/token/6ANQYPVb8pDf5NDsSZpUPYCSmKL61yX3B2DyGNLDCWC',
-        },
-        {
-          name: 'Fox #4123',
-          description: 'Part of the Transdimensional Fox Federation',
-          imageURL: 'https://famousfoxes.com/tff/4123.png',
-          solscanURL:
-            'https://solscan.io/token/BLNsYF3H3vvJonD6dnceRUivcLLyNU7uCVd3Qi5ZfwJu',
-        },
-        {
-          name: 'Banx #6857',
-          description: 'Part of the Banx collection',
-          imageURL: 'https://banxnft.s3.amazonaws.com/images/6857.png',
-          solscanURL:
-            'https://solscan.io/token/HLrSMdkuoJsZAJwzX4GERpTxgFtqnL7NimskcQ22aGEv',
-        },
-        {
-          name: 'Okay Bear #3349',
-          description: 'Part of the Okay Bears Collection.',
-          imageURL:
-            'https://wumlo33xurctejyx5rsczbzzqkxvjmwzkpztem27yvu42o74kotq.arweave.net/tRi3b3ekRTInF-xkLIc5gq9UstlT8zIzX8VpzTv8U6c',
-          solscanURL:
-            'https://solscan.io/token/Cbv2iY4tgyGnCXnYqfZ7fbNVQ6rt7AxG5egvvsXkJGBv',
-        },
-        {
-          name: 'Generations #161948 (HL_GNR)',
-          description: 'Part of the Honeyland collection',
-          imageURL:
-            'https://content.honey.land/images/bees/Honeyland%20Generations/Generational_Bee_Egg_Gen1.jpg',
-          solscanURL:
-            'https://solscan.io/token/7iffR2C8K5AR2ooN3PooYhUprmECPwvfJLH8jFYpmy33',
-        },
-        {
-          name: 'Bored Ape Solana Club #5089',
-          description: 'Part of the Bored Ape Club collection',
-          imageURL: 'https://basc.s3.amazonaws.com/img/5089.png',
-          solscanURL:
-            'https://solscan.io/token/AeUAzgLsU762A7vwvsju16k7GJx8wQLXdP1z8gvCKqeH',
-        },
-        {
-          name: 'Marvelous Mare #2254',
-          description: 'Part of the Marvelous Mare collection',
-          imageURL: 'https://assets.thirdtimegames.com/pfl-pfp/12254.png',
-          solscanURL:
-            'https://solscan.io/token/61m2Gr8iWRSFfPFxkghTdeo275YnqsZ6gtvBjy5i5Y6j',
-        },
-      ],
+      items,
     };
   }
 

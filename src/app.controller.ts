@@ -26,11 +26,11 @@ import { NetworkType, Network } from './common/decorators/network.decorator';
 const MB_TO_BYTES = 1_048_576;
 
 @Controller()
-@UseGuards(PublicKeyGuard)
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Post('image')
+  @UseGuards(PublicKeyGuard)
   @UseInterceptors(FileInterceptor('image'))
   async uploadImage(
     @Network() network: NetworkType,
@@ -48,6 +48,7 @@ export class AppController {
   }
 
   @Post('token')
+  @UseGuards(PublicKeyGuard)
   async createToken(
     @Network() network: NetworkType,
     @PublicKey() publicKey: string,
@@ -67,6 +68,7 @@ export class AppController {
   }
 
   @Post('nft')
+  @UseGuards(PublicKeyGuard)
   async createNft(
     @Network() network: NetworkType,
     @PublicKey() publicKey: string,
