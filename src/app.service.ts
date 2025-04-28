@@ -1,16 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
 import { transferSol } from '@metaplex-foundation/mpl-toolbox';
-import {
-  fetchMetadata,
-  fetchDigitalAsset,
-  fetchAllDigitalAssetByCreator,
-} from '@metaplex-foundation/mpl-token-metadata';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, create, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
-import {
-  fromWeb3JsPublicKey,
-  toWeb3JsTransaction,
-} from '@metaplex-foundation/umi-web3js-adapters';
+import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 import {
   createGenericFile,
   createGenericFileFromJson,
@@ -159,7 +152,10 @@ export class AppService {
   private payerKeypair: Keypair;
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private config: ConfigService) {
+  constructor(
+    private config: ConfigService,
+    private prisma: PrismaService,
+  ) {
     const devnetRPCEndpoint = this.config.env.DEVNET_SOLANA_RPC_BACKEND;
     const mainnetRPCEndpoint = this.config.env.MAINNET_SOLANA_RPC_BACKEND;
 
@@ -244,75 +240,98 @@ export class AppService {
 
   // NOTE: Eventually run a background process to prefetch the list and cache in some form of persistent storage
   async listNFTs(network: NetworkType) {
-    const umi = network === 'devnet' ? this.devnetUmi : this.mainnetUmi;
-    const connection =
-      network === 'devnet' ? this.devnetConnection : this.mainnetConnection;
+    const nfts = await this.prisma.nft.findMany({
+      where: {
+        network,
+      },
+    });
 
-    const METAPLEX_CORE_PROGRAM_ID =
-      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d';
-    const payerPublicKey = this.payerKeypair.publicKey;
+    const items: NFT[] = nfts.map((nft) => {
+      return {
+        name: nft.name,
+        description: nft.description,
+        imageURL: nft.imageUrl,
+        solscanURL: `https://solscan.io/token/${nft.assetId}?cluster=${network}`,
+      };
+    });
 
-    const assetIds: string[] = [];
+    return { items };
 
-    const backendSignatures = await connection.getSignaturesForAddress(
-      payerPublicKey,
-      { limit: 10 },
-    );
-
-    for (const sigInfo of backendSignatures) {
-      const tx = await connection.getTransaction(sigInfo.signature, {
-        maxSupportedTransactionVersion: 1, // Support versioned transactions
-        commitment: 'confirmed', // Add proper commitment
-      });
-
-      if (
-        tx &&
-        tx.transaction &&
-        tx.transaction.message.getAccountKeys().get(0)?.toBase58() ===
-          this.payerKeypair.publicKey.toBase58()
-      ) {
-        const instructions = tx.transaction.message.compiledInstructions;
-        const accountKeys = tx.transaction.message.getAccountKeys();
-
-        for (const instruction of instructions) {
-          const programId = accountKeys.get(instruction.programIdIndex);
-
-          if (programId?.toBase58() === METAPLEX_CORE_PROGRAM_ID) {
-            const accountIndexes = instruction.accountKeyIndexes;
-            const accounts = accountIndexes.map((idx) =>
-              accountKeys.get(idx)?.toBase58(),
-            );
-
-            const assetId = accounts[0];
-            if (assetId) {
-              assetIds.push(assetId);
-            }
-          }
-        }
-      }
-    }
-
-    const items: NFT[] = [];
-    for (const assetId of assetIds) {
-      const mintAddress = publicKey(assetId);
-      const asset = await fetchAssetV1(umi, mintAddress);
-
-      const offchainMetadataResponse = await fetch(asset.uri);
-
-      const offchainMetadata =
-        (await offchainMetadataResponse.json()) as MintSchemaDto['metadata'];
-
-      items.push({
-        name: offchainMetadata.name,
-        description: offchainMetadata.description,
-        imageURL: offchainMetadata.image,
-        solscanURL: `https://solscan.io/token/${mintAddress}?cluster=${network}`,
-      });
-    }
-
-    return {
-      items,
-    };
+    // console.log('nfts', nfts);
+    //
+    // const umi = network === 'devnet' ? this.devnetUmi : this.mainnetUmi;
+    //
+    // const connection =
+    //   network === 'devnet' ? this.devnetConnection : this.mainnetConnection;
+    //
+    // const METAPLEX_CORE_PROGRAM_ID =
+    //   'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d';
+    // const payerPublicKey = this.payerKeypair.publicKey;
+    //
+    // const assetIds: string[] = [];
+    //
+    // const backendSignatures = await connection.getSignaturesForAddress(
+    //   payerPublicKey,
+    //   { limit: 10 },
+    // );
+    //
+    // for (const sigInfo of backendSignatures) {
+    //   const tx = await connection.getTransaction(sigInfo.signature, {
+    //     maxSupportedTransactionVersion: 1, // Support versioned transactions
+    //     commitment: 'confirmed', // Add proper commitment
+    //   });
+    //
+    //   if (
+    //     tx &&
+    //     tx.transaction &&
+    //     tx.transaction.message.getAccountKeys().get(0)?.toBase58() ===
+    //       this.payerKeypair.publicKey.toBase58()
+    //   ) {
+    //     const instructions = tx.transaction.message.compiledInstructions;
+    //     const accountKeys = tx.transaction.message.getAccountKeys();
+    //
+    //     for (const instruction of instructions) {
+    //       const programId = accountKeys.get(instruction.programIdIndex);
+    //
+    //       if (programId?.toBase58() === METAPLEX_CORE_PROGRAM_ID) {
+    //         const accountIndexes = instruction.accountKeyIndexes;
+    //         const accounts = accountIndexes.map((idx) =>
+    //           accountKeys.get(idx)?.toBase58(),
+    //         );
+    //
+    //         const assetId = accounts[0];
+    //         if (assetId) {
+    //           assetIds.push(assetId);
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+    //
+    // const items: NFT[] = [];
+    // for (const assetId of assetIds) {
+    //   console.log('assetId', assetId);
+    //   const mintAddress = publicKey(assetId);
+    //   const asset = await fetchAssetV1(umi, mintAddress);
+    //
+    //   const offchainMetadataResponse = await fetch(asset.uri);
+    //
+    //   const offchainMetadata =
+    //     (await offchainMetadataResponse.json()) as MintSchemaDto['metadata'];
+    //
+    //   items.push({
+    //     name: offchainMetadata.name,
+    //     description: offchainMetadata.description,
+    //     imageURL: offchainMetadata.image,
+    //     solscanURL: `https://solscan.io/token/${mintAddress}?cluster=${network}`,
+    //   });
+    // }
+    //
+    // console.log('items', items);
+    //
+    // return {
+    //   items,
+    // };
   }
 
   async createNft(
